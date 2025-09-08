@@ -43,7 +43,8 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [captureAction, setCaptureAction] = useState<'download' | 'share' | null>(null);
+  const isCapturing = captureAction !== null;
   const [view, setView] = useState<'calendar' | 'agenda'>('calendar');
   const [clubName, setClubName] = useState<string>('Los Monteros Racket Club');
 
@@ -167,11 +168,20 @@ const App: React.FC = () => {
   }, [allEvents, currentDate]);
 
   const handleDownloadImage = useCallback(() => {
-    setIsDownloading(true);
+    setCaptureAction('download');
+  }, []);
+
+  const handleShare = useCallback(() => {
+    if (!navigator.share) {
+      alert('La función de compartir no es compatible con este navegador. En su lugar, se descargará la imagen.');
+      setCaptureAction('download');
+    } else {
+      setCaptureAction('share');
+    }
   }, []);
 
   useEffect(() => {
-    if (!isDownloading) return;
+    if (!captureAction) return;
 
     const timer = setTimeout(async () => {
       let elementToCapture: HTMLElement | null = null;
@@ -181,24 +191,22 @@ const App: React.FC = () => {
       if (view === 'calendar') {
         elementToCapture = calendarRef.current;
       } else {
-        // For agenda, we style and capture a specific wrapper
         wrapperToStyle = document.getElementById('agenda-download-wrapper');
         elementToCapture = wrapperToStyle;
       }
       
-      // Temporarily apply 9:16 aspect ratio styles for agenda download
       if (view === 'agenda' && wrapperToStyle) {
         originalStyles.width = wrapperToStyle.style.width;
         originalStyles.height = wrapperToStyle.style.height;
         originalStyles.overflow = wrapperToStyle.style.overflow;
         
         wrapperToStyle.style.width = '375px';
-        wrapperToStyle.style.height = '667px'; // Common 9:16 resolution
+        wrapperToStyle.style.height = '667px';
         wrapperToStyle.style.overflow = 'hidden';
       }
 
       if (!elementToCapture) {
-        setIsDownloading(false);
+        setCaptureAction(null);
         return;
       }
       
@@ -213,29 +221,52 @@ const App: React.FC = () => {
           scale: 3,
           backgroundColor: backgroundColor,
         });
-        const image = canvas.toDataURL('image/png', 1.0);
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `${view}-${monthName.toLowerCase().replace(' ', '-')}-${year}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        
+        const filename = `${view}-${monthName.toLowerCase().replace(' ', '-')}-${year}.png`;
+
+        if (captureAction === 'download') {
+          const image = canvas.toDataURL('image/png', 1.0);
+          const link = document.createElement('a');
+          link.href = image;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else if (captureAction === 'share') {
+           canvas.toBlob(async (blob) => {
+            if (blob && navigator.share) {
+              const file = new File([blob], filename, { type: 'image/png' });
+              try {
+                await navigator.share({
+                  files: [file],
+                  title: `Calendario ${clubName} - ${monthName} ${year}`,
+                  text: `Aquí está el calendario de ${clubName} para ${monthName}.`,
+                });
+              } catch (error) {
+                if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                  console.error('Error al compartir:', error);
+                  alert('Hubo un problema al intentar compartir la imagen.');
+                }
+              }
+            }
+          }, 'image/png');
+        }
+
       } catch (error) {
         console.error('Error al generar la imagen:', error);
         alert('Hubo un problema al generar la imagen. Por favor, inténtelo de nuevo.');
       } finally {
-        // Restore original styles after capture
         if (view === 'agenda' && wrapperToStyle) {
           wrapperToStyle.style.width = originalStyles.width;
           wrapperToStyle.style.height = originalStyles.height;
           wrapperToStyle.style.overflow = originalStyles.overflow;
         }
-        setIsDownloading(false);
+        setCaptureAction(null);
       }
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [isDownloading, monthName, year, view]);
+  }, [captureAction, monthName, year, view, clubName]);
 
 
   return (
@@ -251,24 +282,25 @@ const App: React.FC = () => {
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
           onDownload={handleDownloadImage}
+          onShare={handleShare}
         />
 
         <main>
           {view === 'calendar' ? (
             <div ref={calendarRef} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg">
-              {isDownloading && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
+              {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
               <Calendar 
                 days={days} 
                 events={allEvents} 
                 onDayClick={handleDayClick} 
                 currentMonth={currentDate.getMonth()}
-                isDownloading={isDownloading}
+                isCapturing={isCapturing}
               />
             </div>
           ) : (
              <div id="agenda-download-wrapper">
                 <div ref={agendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg h-full">
-                  {isDownloading && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
+                  {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
                   <Agenda events={filteredEventsForMonth} />
                 </div>
               </div>

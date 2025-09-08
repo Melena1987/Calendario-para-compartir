@@ -6,7 +6,7 @@ interface CalendarProps {
   events: CalendarEvent[];
   onDayClick: (date: Date) => void;
   currentMonth: number;
-  isDownloading?: boolean;
+  isCapturing?: boolean;
 }
 
 // A helper function to format a Date object to 'YYYY-MM-DD' respecting the local timezone.
@@ -26,7 +26,7 @@ const isEventOnDay = (event: CalendarEvent, day: Date): boolean => {
 
 const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-const Calendar: React.FC<CalendarProps> = ({ days, events, onDayClick, currentMonth, isDownloading = false }) => {
+const Calendar: React.FC<CalendarProps> = ({ days, events, onDayClick, currentMonth, isCapturing = false }) => {
   const isToday = (date: Date) => {
     const today = new Date();
     return date.getDate() === today.getDate() &&
@@ -68,7 +68,7 @@ const Calendar: React.FC<CalendarProps> = ({ days, events, onDayClick, currentMo
           >
             <div className="flex justify-start">
               <span
-                className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${!isDownloading && isToday(day) ? 'bg-blue-600 text-white' : ''} ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}
+                className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${!isCapturing && isToday(day) ? 'bg-blue-600 text-white' : ''} ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}
               >
                 {day.getDate()}
               </span>
