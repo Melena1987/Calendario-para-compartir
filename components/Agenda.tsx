@@ -90,10 +90,10 @@ const Agenda: React.FC<AgendaProps> = ({ events }) => {
                         </span>
                       </div>
                       <div className="min-w-0 flex-1 pt-1.5">
-                        <div className="flex justify-between items-start flex-wrap gap-x-2">
+                        <div className="flex justify-between items-center flex-wrap gap-x-2">
                             <p className="text-md font-semibold text-gray-900 dark:text-white flex-1">{event.title}</p>
                              {event.isAllDay ? (
-                              <span className="text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap self-center bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">Todo el día</span>
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">Todo el día</span>
                             ) : (
                               event.time && <p className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{event.time}</p>
                             )}
