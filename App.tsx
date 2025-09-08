@@ -182,38 +182,41 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!captureAction) return;
-
-    const timer = setTimeout(async () => {
+  
+    const performCapture = async () => {
       const elementToCapture = view === 'calendar' ? calendarRef.current : agendaRef.current;
       const elementToStyle = view === 'agenda' ? agendaRef.current : null;
       const originalStyles: { [key: string]: string } = {};
-
+  
       if (elementToStyle) {
         originalStyles.width = elementToStyle.style.width;
         originalStyles.height = elementToStyle.style.height;
         originalStyles.overflow = elementToStyle.style.overflow;
-        
+  
         elementToStyle.style.width = '375px';
         elementToStyle.style.height = '667px';
         elementToStyle.style.overflow = 'hidden';
       }
-
+  
       if (!elementToCapture) {
         setCaptureAction(null);
         return;
       }
-      
+  
       try {
+        // A little delay to ensure styles are applied after potential DOM changes
+        await new Promise(resolve => setTimeout(resolve, 50));
+  
         const backgroundColor = window.getComputedStyle(elementToCapture).backgroundColor;
-        
+  
         const canvas = await html2canvas(elementToCapture, {
           useCORS: true,
           scale: 3,
           backgroundColor: backgroundColor,
         });
-        
+  
         const filename = `${view}-${monthName.toLowerCase().replace(' ', '-')}-${year}.png`;
-
+  
         if (captureAction === 'download') {
           const image = canvas.toDataURL('image/png', 1.0);
           const link = document.createElement('a');
@@ -241,7 +244,7 @@ const App: React.FC = () => {
             }
           }, 'image/png');
         }
-
+  
       } catch (error) {
         console.error('Error al generar la imagen:', error);
         alert('Hubo un problema al generar la imagen. Por favor, inténtelo de nuevo.');
@@ -253,10 +256,12 @@ const App: React.FC = () => {
         }
         setCaptureAction(null);
       }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [captureAction, monthName, year, view, clubName]);
+    };
+  
+    // Wait for fonts to be ready, then capture
+    document.fonts.ready.then(performCapture);
+  
+  }, [captureAction, monthName, year, view, clubName, calendarRef, agendaRef]);
 
 
   return (
