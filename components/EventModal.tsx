@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { CalendarEvent } from '../types';
-import { TrashIcon } from './Icons';
+import { TrashIcon, AddToCalendarIcon } from './Icons';
 
 interface EventModalProps {
   date: Date;
@@ -69,6 +69,52 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
       setEndDate(toYYYYMMDD(date));
     }
   };
+  
+  const handleAddToGoogleCalendar = (event: CalendarEvent) => {
+    const baseUrl = 'https://www.google.com/calendar/render?action=TEMPLATE';
+    const title = `&text=${encodeURIComponent(event.title)}`;
+    let dates = '';
+
+    if (event.isAllDay) {
+        const startDate = event.date.replace(/-/g, '');
+        let endDateStr: string;
+        if (event.endDate) {
+            const nextDay = new Date(`${event.endDate}T00:00:00`);
+            nextDay.setDate(nextDay.getDate() + 1);
+            endDateStr = toYYYYMMDD(nextDay).replace(/-/g, '');
+        } else {
+            const nextDay = new Date(`${event.date}T00:00:00`);
+            nextDay.setDate(nextDay.getDate() + 1);
+            endDateStr = toYYYYMMDD(nextDay).replace(/-/g, '');
+        }
+        dates = `&dates=${startDate}/${endDateStr}`;
+    } else {
+        const startTime = event.time.replace(':', '') + '00';
+        const startDate = event.date.replace(/-/g, '');
+        const startDateTime = `${startDate}T${startTime}`;
+
+        let endDateTime: string;
+        if (!event.endDate || event.endDate === event.date) {
+            const startDateObj = new Date(`${event.date}T${event.time}`);
+            startDateObj.setHours(startDateObj.getHours() + 1);
+            
+            const endYear = startDateObj.getFullYear();
+            const endMonth = (startDateObj.getMonth() + 1).toString().padStart(2, '0');
+            const endDay = startDateObj.getDate().toString().padStart(2, '0');
+            const endHour = startDateObj.getHours().toString().padStart(2, '0');
+            const endMinute = startDateObj.getMinutes().toString().padStart(2, '0');
+            
+            endDateTime = `${endYear}${endMonth}${endDay}T${endHour}${endMinute}00`;
+        } else {
+            const endDate = event.endDate.replace(/-/g, '');
+            endDateTime = `${endDate}T${startTime}`;
+        }
+        dates = `&dates=${startDateTime}/${endDateTime}`;
+    }
+    
+    const url = `${baseUrl}${title}${dates}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" onClick={onClose}>
@@ -86,9 +132,14 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
                     {!event.isAllDay && event.time && <p className="text-sm">{event.time}</p>}
                   </div>
                   {!event.isHoliday && (
-                    <button onClick={() => onDelete(event.id)} className="p-1 rounded-full hover:bg-black/20">
-                      <TrashIcon className="h-4 w-4 text-white" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => handleAddToGoogleCalendar(event)} className="p-1 rounded-full hover:bg-black/20" aria-label="Añadir a Google Calendar">
+                        <AddToCalendarIcon className="h-4 w-4 text-white" />
+                      </button>
+                      <button onClick={() => onDelete(event.id)} className="p-1 rounded-full hover:bg-black/20" aria-label="Eliminar evento">
+                        <TrashIcon className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
                   )}
                 </div>
               ))
