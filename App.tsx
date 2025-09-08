@@ -205,7 +205,7 @@ const App: React.FC = () => {
   
       try {
         // A little delay to ensure styles are applied after potential DOM changes
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 300));
   
         const backgroundColor = window.getComputedStyle(elementToCapture).backgroundColor;
   
@@ -261,7 +261,7 @@ const App: React.FC = () => {
     // Wait for fonts to be ready, then capture
     document.fonts.ready.then(performCapture);
   
-  }, [captureAction, monthName, year, view, clubName, calendarRef, agendaRef]);
+  }, [captureAction, monthName, year, view, clubName]);
 
 
   return (
