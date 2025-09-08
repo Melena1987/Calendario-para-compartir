@@ -83,13 +83,13 @@ const Agenda: React.FC<AgendaProps> = ({ events }) => {
                     {eventIdx !== eventsByDate[date].length - 1 ? (
                       <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
                     ) : null}
-                    <div className="relative flex space-x-3 items-start">
+                    <div className="relative flex space-x-3 items-center">
                       <div>
                         <span className={`h-8 w-8 rounded-full ${event.color} flex items-center justify-center ring-8 ring-white dark:ring-gray-800`}>
                            {/* An icon could be placed here in the future */}
                         </span>
                       </div>
-                      <div className="min-w-0 flex-1 pt-1.5">
+                      <div className="min-w-0 flex-1">
                         <div className="flex justify-between items-center flex-wrap gap-x-2">
                             <p className="text-md font-semibold text-gray-900 dark:text-white flex-1">{event.title}</p>
                              {event.isAllDay ? (

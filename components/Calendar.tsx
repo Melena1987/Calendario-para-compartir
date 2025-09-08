@@ -75,10 +75,10 @@ const Calendar: React.FC<CalendarProps> = ({ days, events, onDayClick, currentMo
             </div>
             <div className="mt-1 overflow-y-auto space-y-1 flex-grow">
               {dayEvents.map(event => (
-                <div key={event.id} className={`text-xs p-1 rounded-lg text-white ${event.color} shadow-md flex items-center justify-center`}>
-                  <div className="text-center">
-                    <p className="font-bold break-words">{event.title}</p>
-                    {!event.isAllDay && event.time && <p>{event.time}</p>}
+                <div key={event.id} className={`text-xs px-2 py-1.5 rounded-lg text-white ${event.color} shadow-md flex items-center justify-center text-center`}>
+                  <div className="font-bold break-words">
+                    {event.title}
+                    {!event.isAllDay && event.time && <span className="block opacity-90">{event.time}</span>}
                   </div>
                 </div>
               ))}
