@@ -184,25 +184,18 @@ const App: React.FC = () => {
     if (!captureAction) return;
 
     const timer = setTimeout(async () => {
-      let elementToCapture: HTMLElement | null = null;
-      let wrapperToStyle: HTMLElement | null = null;
+      const elementToCapture = view === 'calendar' ? calendarRef.current : agendaRef.current;
+      const elementToStyle = view === 'agenda' ? agendaRef.current : null;
       const originalStyles: { [key: string]: string } = {};
 
-      if (view === 'calendar') {
-        elementToCapture = calendarRef.current;
-      } else {
-        wrapperToStyle = document.getElementById('agenda-download-wrapper');
-        elementToCapture = wrapperToStyle;
-      }
-      
-      if (view === 'agenda' && wrapperToStyle) {
-        originalStyles.width = wrapperToStyle.style.width;
-        originalStyles.height = wrapperToStyle.style.height;
-        originalStyles.overflow = wrapperToStyle.style.overflow;
+      if (elementToStyle) {
+        originalStyles.width = elementToStyle.style.width;
+        originalStyles.height = elementToStyle.style.height;
+        originalStyles.overflow = elementToStyle.style.overflow;
         
-        wrapperToStyle.style.width = '375px';
-        wrapperToStyle.style.height = '667px';
-        wrapperToStyle.style.overflow = 'hidden';
+        elementToStyle.style.width = '375px';
+        elementToStyle.style.height = '667px';
+        elementToStyle.style.overflow = 'hidden';
       }
 
       if (!elementToCapture) {
@@ -211,10 +204,7 @@ const App: React.FC = () => {
       }
       
       try {
-        const contentElement = view === 'calendar' ? calendarRef.current : agendaRef.current;
-        if (!contentElement) throw new Error("Content element not found");
-
-        const backgroundColor = window.getComputedStyle(contentElement).backgroundColor;
+        const backgroundColor = window.getComputedStyle(elementToCapture).backgroundColor;
         
         const canvas = await html2canvas(elementToCapture, {
           useCORS: true,
@@ -256,10 +246,10 @@ const App: React.FC = () => {
         console.error('Error al generar la imagen:', error);
         alert('Hubo un problema al generar la imagen. Por favor, inténtelo de nuevo.');
       } finally {
-        if (view === 'agenda' && wrapperToStyle) {
-          wrapperToStyle.style.width = originalStyles.width;
-          wrapperToStyle.style.height = originalStyles.height;
-          wrapperToStyle.style.overflow = originalStyles.overflow;
+        if (elementToStyle) {
+          elementToStyle.style.width = originalStyles.width;
+          elementToStyle.style.height = originalStyles.height;
+          elementToStyle.style.overflow = originalStyles.overflow;
         }
         setCaptureAction(null);
       }
@@ -298,12 +288,10 @@ const App: React.FC = () => {
               />
             </div>
           ) : (
-             <div id="agenda-download-wrapper">
-                <div ref={agendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg h-full">
-                  {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
-                  <Agenda events={filteredEventsForMonth} />
-                </div>
-              </div>
+            <div ref={agendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
+              {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
+              <Agenda events={filteredEventsForMonth} />
+            </div>
           )}
         </main>
       </div>
