@@ -41,21 +41,27 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
     e.preventDefault();
     if (title.trim()) {
       const startDateStr = toYYYYMMDD(date);
-      const finalEndDate = endDate !== startDateStr ? endDate : undefined;
+      const hasDifferentEndDate = endDate && endDate !== startDateStr;
 
-      if (finalEndDate && finalEndDate < startDateStr) {
+      if (hasDifferentEndDate && endDate < startDateStr) {
         alert('La fecha de fin no puede ser anterior a la fecha de inicio.');
         return;
       }
 
-      onSave({
+      const newEvent: Omit<CalendarEvent, 'id' | 'endDate'> & { endDate?: string } = {
         date: startDateStr,
-        endDate: finalEndDate,
         title,
         time: isAllDay ? '' : time,
         color,
         isAllDay,
-      });
+      };
+
+      if (hasDifferentEndDate) {
+        newEvent.endDate = endDate;
+      }
+
+      onSave(newEvent);
+
       setTitle('');
       setTime('12:00');
       setColor(COLORS[5]);
