@@ -7,6 +7,17 @@ import Agenda from './components/Agenda';
 import Header from './components/Header';
 import DownloadHeader from './components/DownloadHeader';
 import { spanishHolidays } from './data/holidays';
+import { db } from './firebase';
+import {
+  collection,
+  query,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc,
+  setDoc,
+} from 'firebase/firestore';
+
 
 // Declare html2canvas from the global scope
 declare const html2canvas: any;
@@ -34,13 +45,54 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [view, setView] = useState<'calendar' | 'agenda'>('calendar');
-  const [clubName, setClubName] = useState<string>(
-    () => localStorage.getItem('clubName') || 'Los Monteros Racket Club'
-  );
+  const [clubName, setClubName] = useState<string>('Los Monteros Racket Club');
 
   useEffect(() => {
-    localStorage.setItem('clubName', clubName);
-  }, [clubName]);
+    const q = query(collection(db, 'events'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const eventsData: CalendarEvent[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        eventsData.push({
+          id: doc.id,
+          date: data.date,
+          endDate: data.endDate,
+          title: data.title,
+          time: data.time,
+          color: data.color,
+          isAllDay: data.isAllDay,
+          isHoliday: data.isHoliday,
+        });
+      });
+      setEvents(eventsData);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const clubNameDocRef = doc(db, 'settings', 'appConfig');
+    const unsubscribe = onSnapshot(clubNameDocRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().clubName) {
+        setClubName(docSnap.data().clubName);
+      } else {
+        setClubName('Los Monteros Racket Club');
+      }
+    });
+  
+    return () => unsubscribe();
+  }, []);
+  
+  const handleClubNameChange = async (name: string) => {
+      setClubName(name);
+      try {
+          const clubNameDocRef = doc(db, 'settings', 'appConfig');
+          await setDoc(clubNameDocRef, { clubName: name }, { merge: true });
+      } catch (e) {
+          console.error("Error updating club name: ", e);
+          alert("Hubo un error al actualizar el nombre del club.");
+      }
+  }
 
   const { days, monthName, year, goToNextMonth, goToPrevMonth } = useCalendar(currentDate, setCurrentDate);
 
@@ -73,13 +125,23 @@ const App: React.FC = () => {
     setSelectedDate(null);
   };
 
-  const handleSaveEvent = (event: Omit<CalendarEvent, 'id'>) => {
-    setEvents([...events, { ...event, id: crypto.randomUUID() }]);
-    handleCloseModal();
+  const handleSaveEvent = async (event: Omit<CalendarEvent, 'id'>) => {
+    try {
+      await addDoc(collection(db, 'events'), event);
+      handleCloseModal();
+    } catch (e) {
+      console.error("Error adding document: ", e);
+      alert("Hubo un error al guardar el evento.");
+    }
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteDoc(doc(db, 'events', eventId));
+    } catch (e) {
+      console.error("Error deleting document: ", e);
+      alert("Hubo un error al eliminar el evento.");
+    }
   };
   
   const filteredEventsForMonth = useMemo(() => {
@@ -181,7 +243,7 @@ const App: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <Header
           clubName={clubName}
-          onClubNameChange={setClubName}
+          onClubNameChange={handleClubNameChange}
           monthName={monthName}
           year={year}
           view={view}
