@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ clubName, onClubNameChange, monthName, 
               value={clubName}
               onChange={(e) => onClubNameChange(e.target.value)}
               aria-label="Nombre del club, editable"
-              className="w-full text-2xl sm:text-3xl font-serif text-gray-900 dark:text-white bg-transparent outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 -mx-2"
+              className="w-full text-2xl sm:text-3xl font-sans text-gray-900 dark:text-white bg-transparent outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 -mx-2"
             />
             <p className="text-lg sm:text-xl font-sans font-light text-gray-500 dark:text-gray-400 capitalize px-2">{monthName} {year}</p>
         </div>

@@ -253,7 +253,7 @@ const App: React.FC = () => {
         }
         setCaptureAction(null);
       }
-    }, 100);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [captureAction, monthName, year, view, clubName]);
