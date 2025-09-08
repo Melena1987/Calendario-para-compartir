@@ -1,0 +1,5 @@
+{
+  "name": "Calendario Mensual para Compartir",
+  "description": "Una aplicación para crear y visualizar eventos en un calendario mensual. Permite personalizar eventos con colores y exportar el calendario como una imagen para compartir fácilmente en redes sociales como WhatsApp.",
+  "requestFramePermissions": []
+}
