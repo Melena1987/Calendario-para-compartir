@@ -21,8 +21,15 @@ const InstallPWA: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [showIosInstructions, setShowIosInstructions] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Check if the app is already installed and running in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsStandalone(true);
+      return; // No need to set up listeners if already installed
+    }
+
     // Detect iOS
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIos(isIOSDevice);
@@ -54,12 +61,14 @@ const InstallPWA: React.FC = () => {
         console.log('User dismissed the A2HS prompt');
       }
       setDeferredPrompt(null);
+    } else {
+        // Fallback for browsers that don't fire the prompt or if it was dismissed
+        alert('Para instalar la aplicación, busca la opción "Añadir a pantalla de inicio" o "Instalar aplicación" en el menú de tu navegador.');
     }
   };
 
-  const shouldShowButton = isIos || deferredPrompt;
-
-  if (!shouldShowButton) {
+  // Don't show the button if the app is already installed
+  if (isStandalone) {
     return null;
   }
 
@@ -68,9 +77,10 @@ const InstallPWA: React.FC = () => {
       <button
         onClick={handleInstallClick}
         aria-label="Instalar aplicación"
-        className="flex items-center justify-center bg-gray-700 text-white font-semibold p-2.5 rounded-lg hover:bg-gray-800 transition-colors duration-200 shadow-md"
+        className="flex items-center gap-2 justify-center bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-200 shadow-md"
       >
         <InstallIcon className="h-5 w-5 flex-shrink-0" />
+        <span>Instalar Aplicación</span>
       </button>
 
       {showIosInstructions && (

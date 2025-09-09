@@ -6,6 +6,7 @@ import EventModal from './components/EventModal';
 import Agenda from './components/Agenda';
 import Header from './components/Header';
 import DownloadHeader from './components/DownloadHeader';
+import InstallPWA from './components/InstallPWA';
 import { db } from './firebase';
 import {
   collection,
@@ -303,8 +304,8 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen text-gray-800 dark:text-gray-200 p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen text-gray-800 dark:text-gray-200 p-4 sm:p-6 lg:p-8 font-sans flex flex-col">
+      <div className="max-w-7xl mx-auto w-full flex-grow">
         <Header
           clubName={clubName}
           onClubNameChange={handleClubNameChange}
@@ -338,6 +339,10 @@ const App: React.FC = () => {
           )}
         </main>
       </div>
+
+      <footer className="py-6 flex justify-center items-center">
+        <InstallPWA />
+      </footer>
 
       {isModalOpen && selectedDate && (
         <EventModal
