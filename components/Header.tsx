@@ -1,5 +1,6 @@
 import React from 'react';
 import { DownloadIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon, ShareIcon } from './Icons';
+import InstallPWA from './InstallPWA';
 
 interface HeaderProps {
     clubName: string;
@@ -69,6 +70,7 @@ const Header: React.FC<HeaderProps> = ({ clubName, onClubNameChange, monthName, 
           
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <InstallPWA />
             <button
               onClick={onShare}
               aria-label="Compartir"
