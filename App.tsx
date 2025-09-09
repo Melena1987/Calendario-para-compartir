@@ -6,7 +6,6 @@ import EventModal from './components/EventModal';
 import Agenda from './components/Agenda';
 import Header from './components/Header';
 import DownloadHeader from './components/DownloadHeader';
-import { spanishHolidays } from './data/holidays';
 import { db } from './firebase';
 import {
   collection,
@@ -100,22 +99,6 @@ const App: React.FC = () => {
   const calendarRef = useRef<HTMLDivElement>(null);
   const agendaRef = useRef<HTMLDivElement>(null);
 
-  const holidayEvents = useMemo((): CalendarEvent[] => {
-    return spanishHolidays.map(holiday => ({
-      id: `holiday-${holiday.date}`, // a stable ID
-      date: holiday.date,
-      title: holiday.title,
-      time: '', // All-day event
-      color: 'bg-green-600',
-      isHoliday: true,
-      isAllDay: true,
-    }));
-  }, []);
-
-  const allEvents = useMemo(() => {
-    return [...events, ...holidayEvents];
-  }, [events, holidayEvents]);
-
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
@@ -135,6 +118,18 @@ const App: React.FC = () => {
       alert("Hubo un error al guardar el evento.");
     }
   };
+  
+  const handleUpdateEvent = async (event: CalendarEvent) => {
+    try {
+      const eventRef = doc(db, 'events', event.id);
+      const { id, ...eventData } = event;
+      await setDoc(eventRef, eventData);
+      handleCloseModal();
+    } catch (e) {
+      console.error("Error updating document: ", e);
+      alert("Hubo un error al actualizar el evento.");
+    }
+  };
 
   const handleDeleteEvent = async (eventId: string) => {
     try {
@@ -149,7 +144,7 @@ const App: React.FC = () => {
     const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const currentMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
-    return allEvents
+    return events
       .filter(event => {
         const eventStart = new Date(event.date + 'T00:00:00');
         const eventEnd = event.endDate ? new Date(event.endDate + 'T00:00:00') : eventStart;
@@ -165,7 +160,7 @@ const App: React.FC = () => {
         if (a.isAllDay && b.isAllDay) return a.title.localeCompare(b.title);
         return a.time.localeCompare(b.time);
       });
-  }, [allEvents, currentDate]);
+  }, [events, currentDate]);
 
   const handleDownloadImage = useCallback(() => {
     setCaptureAction('download');
@@ -286,7 +281,7 @@ const App: React.FC = () => {
               {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
               <Calendar 
                 days={days} 
-                events={allEvents} 
+                events={events} 
                 onDayClick={handleDayClick} 
                 currentMonth={currentDate.getMonth()}
                 isCapturing={isCapturing}
@@ -304,9 +299,10 @@ const App: React.FC = () => {
       {isModalOpen && selectedDate && (
         <EventModal
           date={selectedDate}
-          events={allEvents.filter(e => isEventOnDay(e, selectedDate))}
+          events={events.filter(e => isEventOnDay(e, selectedDate))}
           onClose={handleCloseModal}
           onSave={handleSaveEvent}
+          onUpdate={handleUpdateEvent}
           onDelete={handleDeleteEvent}
         />
       )}

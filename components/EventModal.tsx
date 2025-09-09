@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CalendarEvent } from '../types';
-import { TrashIcon, AddToCalendarIcon } from './Icons';
+import { TrashIcon, AddToCalendarIcon, EditIcon } from './Icons';
 
 interface EventModalProps {
   date: Date;
   events: CalendarEvent[];
   onClose: () => void;
   onSave: (event: Omit<CalendarEvent, 'id'>) => void;
+  onUpdate: (event: CalendarEvent) => void;
   onDelete: (eventId: string) => void;
 }
 
@@ -23,12 +24,37 @@ const COLORS = [
   'bg-teal-500', 'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'
 ];
 
-const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, onDelete }) => {
+const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, onUpdate, onDelete }) => {
+  // State for the form
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('12:00');
   const [color, setColor] = useState(COLORS[5]);
   const [isAllDay, setIsAllDay] = useState(false);
+  const [isHoliday, setIsHoliday] = useState(false);
   const [endDate, setEndDate] = useState(toYYYYMMDD(date));
+
+  // State to track which event is being edited
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+
+  // When editingEvent changes, populate the form
+  useEffect(() => {
+    if (editingEvent) {
+      setTitle(editingEvent.title);
+      setTime(editingEvent.time || '12:00');
+      setColor(editingEvent.color);
+      setIsAllDay(editingEvent.isAllDay);
+      setIsHoliday(editingEvent.isHoliday || false);
+      setEndDate(editingEvent.endDate || editingEvent.date);
+    } else {
+      // Reset form to default values for a new event
+      setTitle('');
+      setTime('12:00');
+      setColor(COLORS[5]);
+      setIsAllDay(false);
+      setIsHoliday(false);
+      setEndDate(toYYYYMMDD(date));
+    }
+  }, [editingEvent, date]);
 
   const formattedDate = date.toLocaleDateString('es-ES', {
     weekday: 'long',
@@ -48,25 +74,24 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
         return;
       }
 
-      const newEvent: Omit<CalendarEvent, 'id' | 'endDate'> & { endDate?: string } = {
+      const eventData: Omit<CalendarEvent, 'id' | 'endDate'> & { endDate?: string } = {
         date: startDateStr,
         title,
         time: isAllDay ? '' : time,
         color,
         isAllDay,
+        isHoliday,
       };
 
       if (hasDifferentEndDate) {
-        newEvent.endDate = endDate;
+        eventData.endDate = endDate;
       }
-
-      onSave(newEvent);
-
-      setTitle('');
-      setTime('12:00');
-      setColor(COLORS[5]);
-      setIsAllDay(false);
-      setEndDate(toYYYYMMDD(date));
+      
+      if (editingEvent) {
+        onUpdate({ ...eventData, id: editingEvent.id });
+      } else {
+        onSave(eventData);
+      }
     }
   };
   
@@ -131,16 +156,17 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
                     <p className="font-bold">{event.title}</p>
                     {!event.isAllDay && event.time && <p className="text-sm">{event.time}</p>}
                   </div>
-                  {!event.isHoliday && (
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => handleAddToGoogleCalendar(event)} className="p-1 rounded-full hover:bg-black/20" aria-label="Añadir a Google Calendar">
-                        <AddToCalendarIcon className="h-4 w-4 text-white" />
-                      </button>
-                      <button onClick={() => onDelete(event.id)} className="p-1 rounded-full hover:bg-black/20" aria-label="Eliminar evento">
-                        <TrashIcon className="h-4 w-4 text-white" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setEditingEvent(event)} className="p-1 rounded-full hover:bg-black/20" aria-label="Editar evento">
+                      <EditIcon className="h-4 w-4 text-white" />
+                    </button>
+                    <button onClick={() => handleAddToGoogleCalendar(event)} className="p-1 rounded-full hover:bg-black/20" aria-label="Añadir a Google Calendar">
+                      <AddToCalendarIcon className="h-4 w-4 text-white" />
+                    </button>
+                    <button onClick={() => onDelete(event.id)} className="p-1 rounded-full hover:bg-black/20" aria-label="Eliminar evento">
+                      <TrashIcon className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -149,7 +175,7 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
           </div>
           
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Añadir nuevo evento</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{editingEvent ? 'Editar evento' : 'Añadir nuevo evento'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <input
@@ -189,17 +215,38 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
                   )}
                 </div>
                 
-                <div className="flex items-center">
-                  <input
-                    id="all-day"
-                    type="checkbox"
-                    checked={isAllDay}
-                    onChange={(e) => setIsAllDay(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label htmlFor="all-day" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                    Todo el día
-                  </label>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center">
+                    <input
+                      id="all-day"
+                      type="checkbox"
+                      checked={isAllDay}
+                      onChange={(e) => setIsAllDay(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="all-day" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                      Todo el día
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      id="is-holiday"
+                      type="checkbox"
+                      checked={isHoliday}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsHoliday(checked);
+                        if (checked) {
+                          setIsAllDay(true);
+                          setColor('bg-green-600');
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <label htmlFor="is-holiday" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                      Es festivo
+                    </label>
+                  </div>
                 </div>
                 
                 <div>
@@ -218,11 +265,11 @@ const EventModal: React.FC<EventModalProps> = ({ date, events, onClose, onSave, 
                 </div>
               </div>
               <div className="mt-6 flex justify-end space-x-3">
-                <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 transition-colors">
-                  Cancelar
+                <button type="button" onClick={editingEvent ? () => setEditingEvent(null) : onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 transition-colors">
+                  {editingEvent ? 'Cancelar Edición' : 'Cancelar'}
                 </button>
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors">
-                  Guardar Evento
+                  {editingEvent ? 'Actualizar Evento' : 'Guardar Evento'}
                 </button>
               </div>
             </form>
