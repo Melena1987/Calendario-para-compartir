@@ -1,20 +1,32 @@
 import React from 'react';
-import { DownloadIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon, ShareIcon } from './Icons';
+import { DownloadIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon, ShareIcon, QuarterlyViewIcon } from './Icons';
 
 interface HeaderProps {
     clubName: string;
     onClubNameChange: (name: string) => void;
     monthName: string;
     year: number;
-    view: 'calendar' | 'agenda';
-    onViewChange: (view: 'calendar' | 'agenda') => void;
+    quarterName: string;
+    view: 'calendar' | 'agenda' | 'quarterly';
+    onViewChange: (view: 'calendar' | 'agenda' | 'quarterly') => void;
     onPrevMonth: () => void;
     onNextMonth: () => void;
+    onPrevQuarter: () => void;
+    onNextQuarter: () => void;
     onDownload: () => void;
     onShare: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ clubName, onClubNameChange, monthName, year, view, onViewChange, onPrevMonth, onNextMonth, onDownload, onShare }) => {
+const Header: React.FC<HeaderProps> = ({ 
+    clubName, onClubNameChange, 
+    monthName, year, quarterName, 
+    view, onViewChange, 
+    onPrevMonth, onNextMonth, onPrevQuarter, onNextQuarter,
+    onDownload, onShare 
+}) => {
+    const isQuarterlyView = view === 'quarterly';
+    const title = isQuarterlyView ? quarterName : `${monthName} ${year}`;
+    
     return (
       <header className="flex flex-wrap items-center justify-between mb-6 gap-y-4 gap-x-4">
         <div className="flex-1 min-w-[250px]">
@@ -25,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({ clubName, onClubNameChange, monthName, 
               aria-label="Nombre del club, editable"
               className="w-full text-2xl sm:text-3xl font-sans text-gray-900 dark:text-white bg-transparent outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 -mx-2"
             />
-            <p className="text-lg sm:text-xl font-sans font-light text-gray-500 dark:text-gray-400 capitalize px-2">{monthName} {year}</p>
+            <p className="text-lg sm:text-xl font-sans font-light text-gray-500 dark:text-gray-400 capitalize px-2">{title}</p>
         </div>
         
         <div className="flex items-center flex-shrink-0 flex-wrap justify-end gap-2">
@@ -47,20 +59,28 @@ const Header: React.FC<HeaderProps> = ({ clubName, onClubNameChange, monthName, 
               <ListBulletIcon className="h-5 w-5 flex-shrink-0" />
               <span className="hidden sm:inline">Agenda</span>
             </button>
+             <button
+              onClick={() => onViewChange('quarterly')}
+              aria-label="Vista Trimestral"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${view === 'quarterly' ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow' : 'text-gray-600 dark:text-gray-300'}`}
+            >
+              <QuarterlyViewIcon className="h-5 w-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Trimestral</span>
+            </button>
           </div>
           
-          {/* Month Navigation */}
+          {/* Month/Quarter Navigation */}
           <div className="flex items-center">
             <button
-              onClick={onPrevMonth}
-              aria-label="Mes anterior"
+              onClick={isQuarterlyView ? onPrevQuarter : onPrevMonth}
+              aria-label={isQuarterlyView ? "Trimestre anterior" : "Mes anterior"}
               className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
             >
               <ChevronLeftIcon className="h-6 w-6" />
             </button>
             <button
-              onClick={onNextMonth}
-              aria-label="Mes siguiente"
+              onClick={isQuarterlyView ? onNextQuarter : onNextMonth}
+              aria-label={isQuarterlyView ? "Trimestre siguiente" : "Mes siguiente"}
               className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
             >
               <ChevronRightIcon className="h-6 w-6" />

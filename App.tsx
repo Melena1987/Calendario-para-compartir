@@ -7,6 +7,7 @@ import Agenda from './components/Agenda';
 import Header from './components/Header';
 import DownloadHeader from './components/DownloadHeader';
 import InstallPWA from './components/InstallPWA';
+import QuarterlyAgenda from './components/QuarterlyAgenda';
 import { db } from './firebase';
 import {
   collection,
@@ -48,7 +49,7 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [captureAction, setCaptureAction] = useState<'download' | 'share' | null>(null);
   const isCapturing = captureAction !== null;
-  const [view, setView] = useState<'calendar' | 'agenda'>('calendar');
+  const [view, setView] = useState<'calendar' | 'agenda' | 'quarterly'>('calendar');
   const [clubName, setClubName] = useState<string>('Los Monteros Racket Club');
 
   // This useEffect will run once to seed holidays into Firestore if they haven't been seeded before.
@@ -138,10 +139,11 @@ const App: React.FC = () => {
       }
   }
 
-  const { days, monthName, year, goToNextMonth, goToPrevMonth } = useCalendar(currentDate, setCurrentDate);
+  const { days, monthName, year, quarterName, goToNextMonth, goToPrevMonth, goToNextQuarter, goToPrevQuarter } = useCalendar(currentDate, setCurrentDate);
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const agendaRef = useRef<HTMLDivElement>(null);
+  const quarterlyAgendaRef = useRef<HTMLDivElement>(null);
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
@@ -206,6 +208,29 @@ const App: React.FC = () => {
       });
   }, [events, currentDate]);
 
+  const filteredEventsForQuarter = useMemo(() => {
+    const quarterStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const quarterEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
+    quarterEnd.setHours(23, 59, 59, 999);
+
+    return events
+      .filter(event => {
+        const eventStart = new Date(event.date + 'T00:00:00');
+        const eventEnd = event.endDate ? new Date(event.endDate + 'T00:00:00') : eventStart;
+        eventEnd.setHours(23, 59, 59, 999);
+        return eventStart <= quarterEnd && eventEnd >= quarterStart;
+      })
+      .sort((a, b) => {
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+        if (a.isAllDay && !b.isAllDay) return -1;
+        if (!a.isAllDay && b.isAllDay) return 1;
+        if (a.isAllDay && b.isAllDay) return a.title.localeCompare(b.title);
+        return a.time.localeCompare(b.time);
+      });
+  }, [events, currentDate]);
+
+
   const handleDownloadImage = useCallback(() => {
     setCaptureAction('download');
   }, []);
@@ -223,7 +248,19 @@ const App: React.FC = () => {
     if (!captureAction) return;
   
     const performCapture = async () => {
-      const elementToCapture = view === 'calendar' ? calendarRef.current : agendaRef.current;
+      let elementToCapture: HTMLDivElement | null = null;
+      switch(view) {
+        case 'calendar':
+          elementToCapture = calendarRef.current;
+          break;
+        case 'agenda':
+          elementToCapture = agendaRef.current;
+          break;
+        case 'quarterly':
+          elementToCapture = quarterlyAgendaRef.current;
+          break;
+      }
+      
       const elementToStyle = view === 'agenda' ? agendaRef.current : null;
       const originalStyles: { [key: string]: string } = {};
   
@@ -253,8 +290,9 @@ const App: React.FC = () => {
           scale: 3,
           backgroundColor: backgroundColor,
         });
-  
-        const filename = `${view}-${monthName.toLowerCase().replace(' ', '-')}-${year}.png`;
+        
+        const title = view === 'quarterly' ? quarterName : `${monthName} ${year}`;
+        const filename = `${view}-${title.toLowerCase().replace(/\s/g, '-')}.png`;
   
         if (captureAction === 'download') {
           const image = canvas.toDataURL('image/png', 1.0);
@@ -271,8 +309,8 @@ const App: React.FC = () => {
               try {
                 await navigator.share({
                   files: [file],
-                  title: `Calendario ${clubName} - ${monthName} ${year}`,
-                  text: `Aquí está el calendario de ${clubName} para ${monthName}.`,
+                  title: `Calendario ${clubName} - ${title}`,
+                  text: `Aquí está el calendario de ${clubName} para ${title}.`,
                 });
               } catch (error) {
                 if (!(error instanceof DOMException && error.name === 'AbortError')) {
@@ -300,7 +338,7 @@ const App: React.FC = () => {
     // Wait for fonts to be ready, then capture
     document.fonts.ready.then(performCapture);
   
-  }, [captureAction, monthName, year, view, clubName]);
+  }, [captureAction, monthName, year, view, clubName, quarterName]);
 
 
   return (
@@ -311,16 +349,19 @@ const App: React.FC = () => {
           onClubNameChange={handleClubNameChange}
           monthName={monthName}
           year={year}
+          quarterName={quarterName}
           view={view}
           onViewChange={setView}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
+          onPrevQuarter={goToPrevQuarter}
+          onNextQuarter={goToNextQuarter}
           onDownload={handleDownloadImage}
           onShare={handleShare}
         />
 
         <main>
-          {view === 'calendar' ? (
+          {view === 'calendar' && (
             <div ref={calendarRef} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg">
               {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
               <Calendar 
@@ -331,10 +372,17 @@ const App: React.FC = () => {
                 isCapturing={isCapturing}
               />
             </div>
-          ) : (
+          )}
+          {view === 'agenda' && (
             <div ref={agendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
               {isCapturing && <DownloadHeader clubName={clubName} monthName={monthName} year={year} />}
               <Agenda events={filteredEventsForMonth} />
+            </div>
+          )}
+          {view === 'quarterly' && (
+            <div ref={quarterlyAgendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
+              {isCapturing && <DownloadHeader clubName={clubName} monthName={quarterName} year={null} />}
+              <QuarterlyAgenda events={filteredEventsForQuarter} startDate={currentDate} />
             </div>
           )}
         </main>

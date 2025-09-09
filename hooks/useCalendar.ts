@@ -6,6 +6,20 @@ export const useCalendar = (initialDate: Date, onDateChange: (date: Date) => voi
   const monthName = useMemo(() => currentDate.toLocaleDateString('es-ES', { month: 'long' }), [currentDate]);
   const year = useMemo(() => currentDate.getFullYear(), [currentDate]);
 
+  const quarterName = useMemo(() => {
+    const m1 = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const m3 = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 1);
+    
+    const month1Name = m1.toLocaleDateString('es-ES', { month: 'long' });
+    const month3Name = m3.toLocaleDateString('es-ES', { month: 'long' });
+    const year1 = m1.getFullYear();
+    const year3 = m3.getFullYear();
+    
+    const yearString = year1 === year3 ? year1.toString() : `${year1} - ${year3}`;
+    
+    return `${month1Name} - ${month3Name} ${yearString}`;
+  }, [currentDate]);
+
   const days = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -50,6 +64,18 @@ export const useCalendar = (initialDate: Date, onDateChange: (date: Date) => voi
     setCurrentDate(newDate);
     onDateChange(newDate);
   };
+  
+  const goToPrevQuarter = () => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+    setCurrentDate(newDate);
+    onDateChange(newDate);
+  };
+  
+  const goToNextQuarter = () => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 1);
+    setCurrentDate(newDate);
+    onDateChange(newDate);
+  };
 
-  return { days, monthName, year, goToNextMonth, goToPrevMonth };
+  return { days, monthName, year, quarterName, goToNextMonth, goToPrevMonth, goToNextQuarter, goToPrevQuarter };
 };

@@ -62,3 +62,10 @@ export const InstallIcon: React.FC<SVGIconProps> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3v11.25" />
   </svg>
 );
+
+export const QuarterlyViewIcon: React.FC<SVGIconProps> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 3.75L12 2.25l.75 1.5m-1.5 0V3.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v.001M11.25 3.75H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h14.25c.621 0 1.125-.504 1.125-1.125V6.375c0-.621-.504-1.125-1.125-1.125H13.5m-2.25 0v.001M11.25 3.75m-2.25 0h.01M13.5 3.75m-2.25 0h.01" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 8.25h16.5M3.75 12h16.5m-16.5 3.75h16.5" />
+  </svg>
+);
