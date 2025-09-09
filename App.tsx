@@ -15,7 +15,10 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  getDoc,
+  writeBatch,
 } from 'firebase/firestore';
+import { spanishHolidays } from './data/holidays';
 
 
 // Declare html2canvas from the global scope
@@ -46,6 +49,46 @@ const App: React.FC = () => {
   const isCapturing = captureAction !== null;
   const [view, setView] = useState<'calendar' | 'agenda'>('calendar');
   const [clubName, setClubName] = useState<string>('Los Monteros Racket Club');
+
+  // This useEffect will run once to seed holidays into Firestore if they haven't been seeded before.
+  useEffect(() => {
+    const seedHolidaysOnce = async () => {
+      const settingsRef = doc(db, 'settings', 'appConfig');
+      try {
+        const settingsSnap = await getDoc(settingsRef);
+        
+        if (!settingsSnap.exists() || !settingsSnap.data().holidaysSeeded) {
+          console.log('First time setup: Seeding holidays into the database...');
+          
+          const batch = writeBatch(db);
+          
+          // Add holidays
+          spanishHolidays.forEach(holiday => {
+            const newEventRef = doc(collection(db, "events"));
+            batch.set(newEventRef, {
+              title: holiday.title,
+              date: holiday.date,
+              isAllDay: true,
+              isHoliday: true,
+              color: 'bg-green-600',
+              time: '',
+            });
+          });
+          
+          // Set the seeded flag to prevent re-seeding
+          batch.set(settingsRef, { holidaysSeeded: true }, { merge: true });
+          
+          await batch.commit();
+          console.log('Holidays seeded successfully.');
+        }
+      } catch (error) {
+         console.error("Error during holiday seeding check:", error);
+      }
+    };
+  
+    seedHolidaysOnce();
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   useEffect(() => {
     const q = query(collection(db, 'events'));
