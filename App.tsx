@@ -49,8 +49,9 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [captureAction, setCaptureAction] = useState<'download' | 'share' | null>(null);
   const isCapturing = captureAction !== null;
-  const [view, setView] = useState<'calendar' | 'agenda' | 'quarterly'>('calendar');
+  const [view, setView] = useState<'calendar' | 'agenda' | 'multiMonth'>('calendar'); // 'quarterly' -> 'multiMonth'
   const [clubName, setClubName] = useState<string>('Los Monteros Racket Club');
+  const [multiMonthCount, setMultiMonthCount] = useState<number>(3); // New state for number of months
 
   // This useEffect will run once to seed holidays into Firestore if they haven't been seeded before.
   useEffect(() => {
@@ -139,7 +140,7 @@ const App: React.FC = () => {
       }
   }
 
-  const { days, monthName, year, quarterName, goToNextMonth, goToPrevMonth, goToNextQuarter, goToPrevQuarter } = useCalendar(currentDate, setCurrentDate);
+  const { days, monthName, year, multiMonthName, goToNextMonth, goToPrevMonth, goToNextMultiMonth, goToPrevMultiMonth } = useCalendar(currentDate, setCurrentDate, multiMonthCount);
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const agendaRef = useRef<HTMLDivElement>(null);
@@ -208,17 +209,17 @@ const App: React.FC = () => {
       });
   }, [events, currentDate]);
 
-  const filteredEventsForQuarter = useMemo(() => {
-    const quarterStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const quarterEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
-    quarterEnd.setHours(23, 59, 59, 999);
+  const filteredEventsForMultiMonth = useMemo(() => { // Renamed from filteredEventsForQuarter
+    const periodStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const periodEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + multiMonthCount, 0);
+    periodEnd.setHours(23, 59, 59, 999);
 
     return events
       .filter(event => {
         const eventStart = new Date(event.date + 'T00:00:00');
         const eventEnd = event.endDate ? new Date(event.endDate + 'T00:00:00') : eventStart;
         eventEnd.setHours(23, 59, 59, 999);
-        return eventStart <= quarterEnd && eventEnd >= quarterStart;
+        return eventStart <= periodEnd && eventEnd >= periodStart;
       })
       .sort((a, b) => {
         if (a.date < b.date) return -1;
@@ -228,7 +229,7 @@ const App: React.FC = () => {
         if (a.isAllDay && b.isAllDay) return a.title.localeCompare(b.title);
         return a.time.localeCompare(b.time);
       });
-  }, [events, currentDate]);
+  }, [events, currentDate, multiMonthCount]);
 
 
   const handleDownloadImage = useCallback(() => {
@@ -256,7 +257,7 @@ const App: React.FC = () => {
         case 'agenda':
           elementToCapture = agendaRef.current;
           break;
-        case 'quarterly':
+        case 'multiMonth':
           elementToCapture = quarterlyAgendaRef.current;
           break;
       }
@@ -291,7 +292,7 @@ const App: React.FC = () => {
           backgroundColor: backgroundColor,
         });
         
-        const title = view === 'quarterly' ? quarterName : `${monthName} ${year}`;
+        const title = view === 'multiMonth' ? multiMonthName : `${monthName} ${year}`;
         const filename = `${view}-${title.toLowerCase().replace(/\s/g, '-')}.png`;
   
         if (captureAction === 'download') {
@@ -338,7 +339,7 @@ const App: React.FC = () => {
     // Wait for fonts to be ready, then capture
     document.fonts.ready.then(performCapture);
   
-  }, [captureAction, monthName, year, view, clubName, quarterName]);
+  }, [captureAction, monthName, year, view, clubName, multiMonthName]);
 
 
   return (
@@ -349,15 +350,17 @@ const App: React.FC = () => {
           onClubNameChange={handleClubNameChange}
           monthName={monthName}
           year={year}
-          quarterName={quarterName}
+          multiMonthName={multiMonthName}
           view={view}
           onViewChange={setView}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
-          onPrevQuarter={goToPrevQuarter}
-          onNextQuarter={goToNextQuarter}
+          onPrevMultiMonth={goToPrevMultiMonth}
+          onNextMultiMonth={goToNextMultiMonth}
           onDownload={handleDownloadImage}
           onShare={handleShare}
+          multiMonthCount={multiMonthCount}
+          onMultiMonthCountChange={setMultiMonthCount}
         />
 
         <main>
@@ -379,10 +382,10 @@ const App: React.FC = () => {
               <Agenda events={filteredEventsForMonth} />
             </div>
           )}
-          {view === 'quarterly' && (
+          {view === 'multiMonth' && (
             <div ref={quarterlyAgendaRef} className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
-              {isCapturing && <DownloadHeader clubName={clubName} monthName={quarterName} year={null} />}
-              <QuarterlyAgenda events={filteredEventsForQuarter} startDate={currentDate} />
+              {isCapturing && <DownloadHeader clubName={clubName} monthName={multiMonthName} year={null} />}
+              <QuarterlyAgenda events={filteredEventsForMultiMonth} startDate={currentDate} multiMonthCount={multiMonthCount} />
             </div>
           )}
         </main>

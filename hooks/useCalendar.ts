@@ -1,24 +1,24 @@
 import { useState, useMemo } from 'react';
 
-export const useCalendar = (initialDate: Date, onDateChange: (date: Date) => void) => {
+export const useCalendar = (initialDate: Date, onDateChange: (date: Date) => void, multiMonthCount: number = 3) => {
   const [currentDate, setCurrentDate] = useState(initialDate);
 
   const monthName = useMemo(() => currentDate.toLocaleDateString('es-ES', { month: 'long' }), [currentDate]);
   const year = useMemo(() => currentDate.getFullYear(), [currentDate]);
 
-  const quarterName = useMemo(() => {
+  const multiMonthName = useMemo(() => {
     const m1 = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const m3 = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 1);
+    const mEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + multiMonthCount - 1, 1);
     
     const month1Name = m1.toLocaleDateString('es-ES', { month: 'long' });
-    const month3Name = m3.toLocaleDateString('es-ES', { month: 'long' });
+    const monthEndName = mEnd.toLocaleDateString('es-ES', { month: 'long' });
     const year1 = m1.getFullYear();
-    const year3 = m3.getFullYear();
+    const yearEnd = mEnd.getFullYear();
     
-    const yearString = year1 === year3 ? year1.toString() : `${year1} - ${year3}`;
+    const yearString = year1 === yearEnd ? year1.toString() : `${year1} - ${yearEnd}`;
     
-    return `${month1Name} - ${month3Name} ${yearString}`;
-  }, [currentDate]);
+    return `${month1Name} - ${monthEndName} ${yearString}`;
+  }, [currentDate, multiMonthCount]);
 
   const days = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -65,17 +65,17 @@ export const useCalendar = (initialDate: Date, onDateChange: (date: Date) => voi
     onDateChange(newDate);
   };
   
-  const goToPrevQuarter = () => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+  const goToPrevMultiMonth = () => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - multiMonthCount, 1);
     setCurrentDate(newDate);
     onDateChange(newDate);
   };
   
-  const goToNextQuarter = () => {
-    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 1);
+  const goToNextMultiMonth = () => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + multiMonthCount, 1);
     setCurrentDate(newDate);
     onDateChange(newDate);
   };
 
-  return { days, monthName, year, quarterName, goToNextMonth, goToPrevMonth, goToNextQuarter, goToPrevQuarter };
+  return { days, monthName, year, multiMonthName, goToNextMonth, goToPrevMonth, goToNextMultiMonth, goToPrevMultiMonth };
 };

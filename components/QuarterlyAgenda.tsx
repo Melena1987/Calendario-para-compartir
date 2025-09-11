@@ -4,6 +4,7 @@ import type { CalendarEvent } from '../types';
 interface QuarterlyAgendaProps {
   events: CalendarEvent[];
   startDate: Date;
+  multiMonthCount: number;
 }
 
 const toYYYYMMDD = (date: Date): string => {
@@ -13,20 +14,23 @@ const toYYYYMMDD = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const QuarterlyAgenda: React.FC<QuarterlyAgendaProps> = ({ events, startDate }) => {
-  const monthsInQuarter = useMemo(() => [
-    new Date(startDate.getFullYear(), startDate.getMonth(), 1),
-    new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1),
-    new Date(startDate.getFullYear(), startDate.getMonth() + 2, 1),
-  ], [startDate]);
+const QuarterlyAgenda: React.FC<QuarterlyAgendaProps> = ({ events, startDate, multiMonthCount }) => {
+  const monthsToDisplay = useMemo(() => {
+    const months = [];
+    for (let i = 0; i < multiMonthCount; i++) {
+        months.push(new Date(startDate.getFullYear(), startDate.getMonth() + i, 1));
+    }
+    return months;
+  }, [startDate, multiMonthCount]);
 
   const eventsByMonth = useMemo(() => {
     const monthlyEvents: Record<string, CalendarEvent[]> = {};
 
-    monthsInQuarter.forEach(monthDate => {
+    monthsToDisplay.forEach(monthDate => {
       const monthKey = monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
       const monthStart = monthDate;
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      monthEnd.setHours(23, 59, 59, 999);
 
       const filtered = events.filter(event => {
         const eventStart = new Date(event.date + 'T00:00:00');
@@ -41,7 +45,7 @@ const QuarterlyAgenda: React.FC<QuarterlyAgendaProps> = ({ events, startDate }) 
     });
 
     return monthlyEvents;
-  }, [events, monthsInQuarter]);
+  }, [events, monthsToDisplay]);
   
   const formatDateHeader = (dateString: string) => {
     const date = new Date(`${dateString}T00:00:00`);
@@ -53,10 +57,12 @@ const QuarterlyAgenda: React.FC<QuarterlyAgendaProps> = ({ events, startDate }) 
     });
   };
 
-  if (events.length === 0) {
+  const hasEventsInPeriod = useMemo(() => Object.keys(eventsByMonth).length > 0, [eventsByMonth]);
+
+  if (!hasEventsInPeriod) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No hay eventos para este trimestre.</p>
+        <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">No hay eventos para este período.</p>
         <p className="text-gray-500 dark:text-gray-400 mt-2">Puedes añadir nuevos eventos desde la vista de "Calendario".</p>
       </div>
     );

@@ -6,26 +6,29 @@ interface HeaderProps {
     onClubNameChange: (name: string) => void;
     monthName: string;
     year: number;
-    quarterName: string;
-    view: 'calendar' | 'agenda' | 'quarterly';
-    onViewChange: (view: 'calendar' | 'agenda' | 'quarterly') => void;
+    multiMonthName: string;
+    view: 'calendar' | 'agenda' | 'multiMonth';
+    onViewChange: (view: 'calendar' | 'agenda' | 'multiMonth') => void;
     onPrevMonth: () => void;
     onNextMonth: () => void;
-    onPrevQuarter: () => void;
-    onNextQuarter: () => void;
+    onPrevMultiMonth: () => void;
+    onNextMultiMonth: () => void;
     onDownload: () => void;
     onShare: () => void;
+    multiMonthCount: number;
+    onMultiMonthCountChange: (count: number) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
     clubName, onClubNameChange, 
-    monthName, year, quarterName, 
+    monthName, year, multiMonthName, 
     view, onViewChange, 
-    onPrevMonth, onNextMonth, onPrevQuarter, onNextQuarter,
-    onDownload, onShare 
+    onPrevMonth, onNextMonth, onPrevMultiMonth, onNextMultiMonth,
+    onDownload, onShare,
+    multiMonthCount, onMultiMonthCountChange
 }) => {
-    const isQuarterlyView = view === 'quarterly';
-    const title = isQuarterlyView ? quarterName : `${monthName} ${year}`;
+    const isMultiMonthView = view === 'multiMonth';
+    const title = isMultiMonthView ? multiMonthName : `${monthName} ${year}`;
     
     return (
       <header className="flex flex-wrap items-center justify-between mb-6 gap-y-4 gap-x-4">
@@ -60,27 +63,41 @@ const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Agenda</span>
             </button>
              <button
-              onClick={() => onViewChange('quarterly')}
-              aria-label="Vista Trimestral"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${view === 'quarterly' ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow' : 'text-gray-600 dark:text-gray-300'}`}
+              onClick={() => onViewChange('multiMonth')}
+              aria-label="Vista Varios Meses"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${view === 'multiMonth' ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow' : 'text-gray-600 dark:text-gray-300'}`}
             >
               <QuarterlyViewIcon className="h-5 w-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Trimestral</span>
+              <span className="hidden sm:inline">Varios Meses</span>
             </button>
           </div>
           
-          {/* Month/Quarter Navigation */}
+          {isMultiMonthView && (
+            <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+              {[3, 4, 6].map(count => (
+                  <button
+                    key={count}
+                    onClick={() => onMultiMonthCountChange(count)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${multiMonthCount === count ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                      {`${count} M`}
+                  </button>
+              ))}
+            </div>
+          )}
+
+          {/* Month/Period Navigation */}
           <div className="flex items-center">
             <button
-              onClick={isQuarterlyView ? onPrevQuarter : onPrevMonth}
-              aria-label={isQuarterlyView ? "Trimestre anterior" : "Mes anterior"}
+              onClick={isMultiMonthView ? onPrevMultiMonth : onPrevMonth}
+              aria-label={isMultiMonthView ? "Período anterior" : "Mes anterior"}
               className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
             >
               <ChevronLeftIcon className="h-6 w-6" />
             </button>
             <button
-              onClick={isQuarterlyView ? onNextQuarter : onNextMonth}
-              aria-label={isQuarterlyView ? "Trimestre siguiente" : "Mes siguiente"}
+              onClick={isMultiMonthView ? onNextMultiMonth : onNextMonth}
+              aria-label={isMultiMonthView ? "Período siguiente" : "Mes siguiente"}
               className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
             >
               <ChevronRightIcon className="h-6 w-6" />
