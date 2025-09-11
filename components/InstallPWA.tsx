@@ -22,21 +22,26 @@ const InstallPWA: React.FC = () => {
   const [isIos, setIsIos] = useState(false);
   const [showIosInstructions, setShowIosInstructions] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstallButton, setShowInstallButton] = useState(false);
 
   useEffect(() => {
     // Check if the app is already installed and running in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
       setIsStandalone(true);
       return; // No need to set up listeners if already installed
     }
 
     // Detect iOS
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIos(isIOSDevice);
+    if (isIOSDevice) {
+        setIsIos(true);
+        setShowInstallButton(true);
+    }
 
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      setShowInstallButton(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -57,18 +62,16 @@ const InstallPWA: React.FC = () => {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         console.log('User accepted the A2HS prompt');
+        setShowInstallButton(false); // Hide button after successful install
       } else {
         console.log('User dismissed the A2HS prompt');
       }
       setDeferredPrompt(null);
-    } else {
-        // Fallback for browsers that don't fire the prompt or if it was dismissed
-        alert('Para instalar la aplicación, busca la opción "Añadir a pantalla de inicio" o "Instalar aplicación" en el menú de tu navegador.');
     }
   };
 
-  // Don't show the button if the app is already installed
-  if (isStandalone) {
+  // Don't show the button if the app is already installed or not installable
+  if (isStandalone || !showInstallButton) {
     return null;
   }
 
